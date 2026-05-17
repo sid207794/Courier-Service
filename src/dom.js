@@ -343,16 +343,70 @@ document.addEventListener('DOMContentLoaded', () => {
     const weight = document.getElementById('weight').value;
     const service = document.getElementById('serviceType').value;
     const phone = document.getElementById('receiverPhone').value.trim();
+    const address = document.getElementById('deliveryAddr').value.trim();
 
     if (!name || !pickup || !drop || !weight || !service || !phone) {
       showToast('⚠️ Please fill in all fields');
       return;
     }
 
-    const id = 'SWR-' + Date.now().toString().slice(-6);
-    showToast(`🎉 Booked! Your tracking ID: ${id}`, 4000);
+    // Generate tracking ID
+    const trackId = 'SWR-' + Date.now().toString().slice(-6);
 
-    // Reset
+    // Build shipment object matching admin dashboard structure
+    const shipment = {
+      id: trackId,
+      customer: name,
+      phone: phone,
+      service:
+        service === 'sameday'
+          ? 'Same-Day Express'
+          : service === 'express'
+            ? 'Overnight Express'
+            : service === 'standard'
+              ? 'Standard'
+              : 'Economy',
+      pickup: pickup,
+      delivery: address || drop,
+      location: pickup + ' Hub',
+      status: 'Booked',
+      date: new Date(Date.now() + 5 * 86400000).toISOString().split('T')[0],
+      weight: weight,
+      notes: '',
+      createdAt: new Date().toISOString(),
+      timeline: [
+        {
+          title: 'Order Booked',
+          time: new Date().toLocaleString('en-IN', {
+            dateStyle: 'medium',
+            timeStyle: 'short',
+          }),
+          state: 'active',
+          icon: '📋',
+        },
+        { title: 'Picked Up', time: 'Pending', state: 'pending', icon: '📬' },
+        { title: 'In Transit', time: 'Pending', state: 'pending', icon: '🚚' },
+        {
+          title: 'Out for Delivery',
+          time: 'Pending',
+          state: 'pending',
+          icon: '🚴',
+        },
+        { title: 'Delivered', time: 'Pending', state: 'pending', icon: '✅' },
+      ],
+    };
+
+    // Save to localStorage
+    const existing = JSON.parse(
+      localStorage.getItem('swiftroute_shipments') || '[]'
+    );
+    existing.push(shipment);
+    localStorage.setItem('swiftroute_shipments', JSON.stringify(existing));
+
+    // Show success
+    showToast(`🎉 Booked! Your tracking ID: ${trackId}`, 4000);
+
+    // Reset form
     [
       'senderName',
       'pickupCity',
