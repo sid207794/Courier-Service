@@ -12,6 +12,15 @@ module.exports = {
   plugins: [
     new htmlWebpackPlugin({
       template: './src/template.html',
+      filename: 'index.html',
+    }),
+    new htmlWebpackPlugin({
+      template: './src/adminLogin.html',
+      filename: 'adminLogin.html',
+    }),
+    new htmlWebpackPlugin({
+      template: './src/adminDash.html',
+      filename: 'adminDash.html',
     }),
     new MiniCssExtractPlugin({
       filename: './src/style.css',
