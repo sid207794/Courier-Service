@@ -532,7 +532,7 @@ html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(-
 <script>
 // ── AUTH GUARD
 if (localStorage.getItem('swiftroute_auth') !== 'true') {
-  window.location.href = 'adminLogin.html';
+  window.location.href = '/Courier-Service/src/adminLogin.html';
 }
 document.getElementById('adminEmail').textContent =
   localStorage.getItem('swiftroute_admin_email') || 'admin@courier.com';
@@ -540,7 +540,7 @@ document.getElementById('adminEmail').textContent =
 function logout() {
   showConfirm('Log out?', 'You will be returned to the login page.', () => {
     localStorage.removeItem('swiftroute_auth');
-    window.location.href = 'adminLogin.html';
+    window.location.href = '/Courier-Service/src/adminLogin.html';
   });
 }
 

@@ -528,7 +528,7 @@
 
   // If already logged in, redirect
   if (localStorage.getItem('swiftroute_auth') === 'true') {
-    window.location.href = 'adminDash.html';
+    window.location.href = '/Courier-Service/src/adminDash.html';
   }
 
   // Toggle password visibility
@@ -576,7 +576,7 @@
       setTimeout(() => {
         localStorage.setItem('swiftroute_auth', 'true');
         localStorage.setItem('swiftroute_admin_email', email);
-        window.location.href = 'adminDash.html';
+        window.location.href = '/Courier-Service/src/adminDash.html';
       }, 2200);
 
     } else {
