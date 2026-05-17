@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwiftRoute — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>📦</text></svg>">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0c12;
+  --surface: #13161f;
+  --surface2: #1a1e2e;
+  --surface3: #1f2335;
+  --rust: #e85d3a;
+  --rust-dim: rgba(232,93,58,0.15);
+  --rust-glow: rgba(232,93,58,0.25);
+  --green: #22a06b;
+  --amber: #f59e0b;
+  --blue: #3b82f6;
+  --text: #e8e2d6;
+  --muted: #5a5a70;
+  --border: rgba(255,255,255,0.07);
+  --sidebar-w: 240px;
+}
+html, body { height: 100%; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
+
+/* ── LAYOUT ── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 1.5rem 0;
+  overflow-y: auto;
+}
+.sidebar-brand {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0 1.5rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1.5rem;
+  text-decoration: none; color: var(--text);
+}
+.brand-icon { width:36px;height:36px;background:var(--rust);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0; }
+.brand-name { font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;letter-spacing:-0.03em; }
+.brand-name span { color:var(--rust); }
+.brand-badge { font-size:0.6rem;background:var(--rust-dim);color:var(--rust);padding:0.15rem 0.5rem;border-radius:10px;font-family:'Syne',sans-serif;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;margin-left:auto; }
+
+.nav-section { padding: 0 1rem; margin-bottom: 0.5rem; }
+.nav-label { font-family:'Syne',sans-serif;font-size:0.65rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--muted);padding:0 0.5rem;margin-bottom:0.4rem; }
+.nav-item {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.88rem; font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.1rem;
+  border: none; background: none; width: 100%; text-align: left;
+}
+.nav-item:hover { background: var(--surface2); color: var(--text); }
+.nav-item.active { background: var(--rust-dim); color: var(--rust); font-weight: 600; }
+.nav-item .nav-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 1rem 1rem 0;
+  border-top: 1px solid var(--border);
+}
+.admin-pill {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface2);
+  border-radius: 8px;
+}
+.admin-avatar { width:32px;height:32px;background:var(--rust);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;font-family:'Syne',sans-serif; }
+.admin-info { flex:1; overflow:hidden; }
+.admin-name { font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.admin-role { font-size:0.7rem;color:var(--muted); }
+.logout-btn { background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0.2rem;transition:color 0.2s; }
+.logout-btn:hover { color:var(--rust); }
+
+/* ── MAIN ── */
+.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+/* topbar */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex; align-items: center; gap: 1rem;
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar-title { font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;flex:1; }
+.search-wrap { display:flex;align-items:center;gap:0.5rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:0.5rem 0.8rem;width:260px;transition:border-color 0.2s; }
+.search-wrap:focus-within { border-color:var(--rust); }
+.search-wrap input { background:none;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.88rem;outline:none;flex:1; }
+.search-wrap input::placeholder { color:var(--muted); }
+
+/* ── CONTENT ── */
+.content { padding: 2rem; flex: 1; }
+
+/* panels */
+.panel { display: none; }
+.panel.active { display: block; animation: panelIn 0.3s ease; }
+@keyframes panelIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── STATS ROW ── */
+.stats-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem; }
+.stat-card {
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:1.2rem 1.4rem;
+  display:flex; align-items:center; gap:1rem;
+  transition:border-color 0.2s;
+}
+.stat-card:hover { border-color:rgba(255,255,255,0.15); }
+.stat-card-icon { width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0; }
+.stat-card-body { flex:1; min-width:0; }
+.stat-card-num { font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:800;line-height:1; }
+.stat-card-label { font-size:0.78rem;color:var(--muted);margin-top:0.2rem; }
+
+/* ── SECTION HEADER ── */
+.section-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem; }
+.section-title { font-family:'Syne',sans-serif;font-size:1rem;font-weight:700; }
+
+/* ── BUTTONS ── */
+.btn { display:inline-flex;align-items:center;gap:0.4rem;padding:0.55rem 1.1rem;border-radius:7px;font-family:'Syne',sans-serif;font-weight:700;font-size:0.82rem;cursor:pointer;border:none;transition:all 0.2s;letter-spacing:0.02em; }
+.btn-rust { background:var(--rust);color:white; }
+.btn-rust:hover { background:#c94a2b;transform:translateY(-1px);box-shadow:0 4px 16px var(--rust-glow); }
+.btn-ghost { background:var(--surface2);color:var(--text);border:1px solid var(--border); }
+.btn-ghost:hover { border-color:rgba(255,255,255,0.2); }
+.btn-sm { padding:0.35rem 0.7rem;font-size:0.75rem;border-radius:5px; }
+.btn-green { background:rgba(34,160,107,0.15);color:var(--green);border:1px solid rgba(34,160,107,0.2); }
+.btn-green:hover { background:rgba(34,160,107,0.25); }
+.btn-danger { background:rgba(232,93,58,0.1);color:var(--rust);border:1px solid rgba(232,93,58,0.2); }
+.btn-danger:hover { background:rgba(232,93,58,0.2); }
+
+/* ── TABLE ── */
+.table-wrap { background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden; }
+.data-table { width:100%;border-collapse:collapse;font-size:0.85rem; }
+.data-table th { padding:0.8rem 1rem;text-align:left;font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border);background:var(--surface); }
+.data-table td { padding:0.9rem 1rem;border-bottom:1px solid var(--border);vertical-align:middle; }
+.data-table tr:last-child td { border-bottom:none; }
+.data-table tbody tr:hover { background:var(--surface2); }
+.data-table .track-id { font-family:'Syne',sans-serif;font-weight:700;font-size:0.8rem;color:var(--text); }
+.data-table .customer { font-weight:500; }
+.data-table .location { color:var(--muted);font-size:0.82rem; }
+.data-table .date { color:var(--muted);font-size:0.82rem; }
+.action-btns { display:flex;gap:0.4rem;flex-wrap:wrap; }
+.empty-state { text-align:center;padding:3rem;color:var(--muted);font-size:0.9rem; }
+.empty-state .empty-icon { font-size:2.5rem;margin-bottom:0.8rem; }
+
+/* ── STATUS BADGE ── */
+.badge { display:inline-flex;align-items:center;gap:0.35rem;padding:0.25rem 0.65rem;border-radius:20px;font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.05em;white-space:nowrap; }
+.badge-booked { background:rgba(59,130,246,0.12);color:#3b82f6; }
+.badge-pickup { background:rgba(245,158,11,0.12);color:#f59e0b; }
+.badge-transit { background:rgba(139,92,246,0.12);color:#8b5cf6; }
+.badge-out { background:rgba(34,160,107,0.15);color:var(--green); }
+.badge-delivered { background:rgba(34,160,107,0.25);color:var(--green); }
+.badge-dot { width:5px;height:5px;border-radius:50%;background:currentColor; }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display:none;position:fixed;inset:0;background:rgba(10,12,18,0.85);z-index:100;
+  align-items:center;justify-content:center;backdrop-filter:blur(4px);
+}
+.modal-overlay.open { display:flex;animation:fadeIn 0.2s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.modal {
+  background:var(--surface);border:1px solid var(--border);border-radius:16px;
+  padding:2rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+  animation:slideUp 0.25s ease;
+  position:relative;
+}
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.modal-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem; }
+.modal-title { font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800; }
+.modal-close { background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;padding:0.2rem;transition:color 0.2s;line-height:1; }
+.modal-close:hover { color:var(--text); }
+
+/* form fields inside modal */
+.form-field { margin-bottom:1rem; }
+.form-field label { display:block;font-family:'Syne',sans-serif;font-size:0.7rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:0.4rem; }
+.form-field input, .form-field select, .form-field textarea {
+  width:100%;padding:0.75rem 0.9rem;background:var(--surface2);border:1.5px solid var(--border);
+  border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s;
+}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus { border-color:var(--rust); }
+.form-field input::placeholder,.form-field textarea::placeholder { color:var(--muted); opacity:0.6; }
+.form-field select option { background:var(--surface2); }
+.form-row { display:grid;grid-template-columns:1fr 1fr;gap:0.8rem; }
+.form-actions { display:flex;gap:0.8rem;margin-top:1.5rem;justify-content:flex-end; }
+
+/* timeline in modal */
+.timeline-preview { margin-top:1rem; }
+.tp-step { display:flex;gap:0.8rem;padding-bottom:1rem;position:relative; }
+.tp-step:not(:last-child)::after { content:'';position:absolute;left:14px;top:28px;width:2px;height:calc(100% - 8px);background:var(--border); }
+.tp-dot { width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0;position:relative;z-index:1; }
+.tp-dot.done { background:rgba(34,160,107,0.2);color:var(--green); }
+.tp-dot.active { background:var(--rust-dim);color:var(--rust); }
+.tp-dot.pending { background:var(--surface2);color:var(--muted); }
+.tp-info { flex:1; }
+.tp-title { font-family:'Syne',sans-serif;font-size:0.8rem;font-weight:700;margin-bottom:0.1rem; }
+.tp-time { font-size:0.75rem;color:var(--muted); }
+
+/* toast */
+.toast { position:fixed;bottom:1.5rem;right:1.5rem;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:0.8rem 1.2rem;border-radius:10px;font-family:'Syne',sans-serif;font-size:0.85rem;font-weight:600;z-index:999;transform:translateY(80px);opacity:0;transition:all 0.3s;box-shadow:0 8px 32px rgba(0,0,0,0.4);display:flex;align-items:center;gap:0.5rem; }
+.toast.show { transform:translateY(0);opacity:1; }
+.toast.success { border-color:rgba(34,160,107,0.4); }
+.toast.error { border-color:rgba(232,93,58,0.4); }
+
+/* confirm dialog */
+.confirm-overlay { display:none;position:fixed;inset:0;background:rgba(10,12,18,0.85);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(4px); }
+.confirm-overlay.open { display:flex; }
+.confirm-box { background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.8rem;max-width:360px;width:90%;text-align:center; }
+.confirm-icon { font-size:2rem;margin-bottom:0.8rem; }
+.confirm-title { font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;margin-bottom:0.5rem; }
+.confirm-text { font-size:0.85rem;color:var(--muted);margin-bottom:1.5rem;line-height:1.6; }
+.confirm-actions { display:flex;gap:0.8rem;justify-content:center; }
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span id="toastIcon"></span><span id="toastMsg"></span></div>
+
+<!-- CONFIRM DIALOG -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">⚠️</div>
+    <div class="confirm-title" id="confirmTitle">Are you sure?</div>
+    <div class="confirm-text" id="confirmText">This action cannot be undone.</div>
+    <div class="confirm-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-rust" id="confirmOk">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD / EDIT SHIPMENT MODAL -->
+<div class="modal-overlay" id="shipmentModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Add New Shipment</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Tracking ID *</label>
+        <input type="text" id="f-trackId" placeholder="e.g. SWR-2024-099">
+      </div>
+      <div class="form-field">
+        <label>Customer Name *</label>
+        <input type="text" id="f-customer" placeholder="Full name">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Phone</label>
+        <input type="tel" id="f-phone" placeholder="+91 98765 43210">
+      </div>
+      <div class="form-field">
+        <label>Service Type</label>
+        <select id="f-service">
+          <option value="Same-Day Express">Same-Day Express</option>
+          <option value="Overnight Express">Overnight Express</option>
+          <option value="Standard">Standard (3-5 days)</option>
+          <option value="Economy">Economy (7+ days)</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Pickup Address</label>
+      <input type="text" id="f-pickup" placeholder="Sender's address">
+    </div>
+    <div class="form-field">
+      <label>Delivery Address *</label>
+      <input type="text" id="f-delivery" placeholder="Recipient's full address">
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Current Location *</label>
+        <input type="text" id="f-location" placeholder="e.g. Pune Hub">
+      </div>
+      <div class="form-field">
+        <label>Shipment Status *</label>
+        <select id="f-status">
+          <option value="Booked">Booked</option>
+          <option value="Picked Up">Picked Up</option>
+          <option value="In Transit">In Transit</option>
+          <option value="Out for Delivery">Out for Delivery</option>
+          <option value="Delivered">Delivered</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-field">
+        <label>Expected Delivery Date *</label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="form-field">
+        <label>Weight (kg)</label>
+        <input type="number" id="f-weight" placeholder="e.g. 2.5" min="0.1" step="0.1">
+      </div>
+    </div>
+    <div class="form-field">
+      <label>Notes (optional)</label>
+      <textarea id="f-notes" rows="2" placeholder="Any special instructions..."></textarea>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-rust" id="saveShipmentBtn">💾 Save Shipment</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT STATUS MODAL -->
+<div class="modal-overlay" id="statusModal">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Update Shipment</div>
+      <button class="modal-close" onclick="closeStatusModal()">✕</button>
+    </div>
+    <div class="form-field">
+      <label>Tracking ID</label>
+      <input type="text" id="s-trackId" readonly style="opacity:0.5;cursor:not-allowed">
+    </div>
+    <div class="form-field">
+      <label>Current Status</label>
+      <select id="s-status">
+        <option value="Booked">Booked</option>
+        <option value="Picked Up">Picked Up</option>
+        <option value="In Transit">In Transit</option>
+        <option value="Out for Delivery">Out for Delivery</option>
+        <option value="Delivered">Delivered</option>
+      </select>
+    </div>
+    <div class="form-field">
+      <label>Current Location</label>
+      <input type="text" id="s-location" placeholder="e.g. Mumbai Sorting Hub">
+    </div>
+    <div class="form-field">
+      <label>Expected Delivery Date</label>
+      <input type="date" id="s-date">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-ghost" onclick="closeStatusModal()">Cancel</button>
+      <button class="btn btn-rust" id="saveStatusBtn">✓ Update Status</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <a href="#" class="sidebar-brand">
+      <div class="brand-icon">📦</div>
+      <div class="brand-name">Swift<span>Route</span></div>
+      <div class="brand-badge">Admin</div>
+    </a>
+
+    <div class="nav-section">
+      <div class="nav-label">Main</div>
+      <button class="nav-item active" data-panel="overview" onclick="switchPanel(this)">
+        <span class="nav-icon">📊</span> Overview
+      </button>
+      <button class="nav-item" data-panel="shipments" onclick="switchPanel(this)">
+        <span class="nav-icon">📦</span> Shipments
+      </button>
+      <button class="nav-item" data-panel="add" onclick="switchPanel(this)">
+        <span class="nav-icon">➕</span> Add Shipment
+      </button>
+    </div>
+
+    <div class="nav-section" style="margin-top:1rem">
+      <div class="nav-label">Links</div>
+      <button class="nav-item" onclick="window.open('index.html','_blank')">
+        <span class="nav-icon">🌐</span> View Website
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="admin-pill">
+        <div class="admin-avatar">A</div>
+        <div class="admin-info">
+          <div class="admin-name" id="adminEmail">admin@courier.com</div>
+          <div class="admin-role">Administrator</div>
+        </div>
+        <button class="logout-btn" onclick="logout()" title="Logout">⏻</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Overview</div>
+      <div class="search-wrap">
+        <span>🔍</span>
+        <input type="text" id="globalSearch" placeholder="Search by tracking ID…" oninput="handleSearch(this.value)">
+      </div>
+      <button class="btn btn-rust" onclick="openAddModal()">+ Add Shipment</button>
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW PANEL -->
+      <div class="panel active" id="panel-overview">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="section-header">
+          <div class="section-title">Recent Shipments</div>
+          <button class="btn btn-ghost btn-sm" onclick="switchPanelByName('shipments')">View All →</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>Tracking ID</th><th>Customer</th><th>Status</th>
+              <th>Location</th><th>Expected Delivery</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="recentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SHIPMENTS PANEL -->
+      <div class="panel" id="panel-shipments">
+        <div class="section-header">
+          <div class="section-title">All Shipments</div>
+          <button class="btn btn-rust" onclick="openAddModal()">+ Add Shipment</button>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr>
+              <th>Tracking ID</th><th>Customer</th><th>Service</th><th>Status</th>
+              <th>Location</th><th>Expected Delivery</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="allTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADD SHIPMENT PANEL (inline form) -->
+      <div class="panel" id="panel-add">
+        <div class="section-header">
+          <div class="section-title">Add New Shipment</div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:2rem;max-width:700px">
+          <div class="form-row">
+            <div class="form-field">
+              <label>Tracking ID *</label>
+              <input type="text" id="af-trackId" placeholder="e.g. SWR-2024-099">
+            </div>
+            <div class="form-field">
+              <label>Customer Name *</label>
+              <input type="text" id="af-customer" placeholder="Full name">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Phone</label>
+              <input type="tel" id="af-phone" placeholder="+91 98765 43210">
+            </div>
+            <div class="form-field">
+              <label>Service Type</label>
+              <select id="af-service">
+                <option value="Same-Day Express">Same-Day Express</option>
+                <option value="Overnight Express">Overnight Express</option>
+                <option value="Standard">Standard (3-5 days)</option>
+                <option value="Economy">Economy (7+ days)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Pickup Address</label>
+            <input type="text" id="af-pickup" placeholder="Sender's address">
+          </div>
+          <div class="form-field">
+            <label>Delivery Address *</label>
+            <input type="text" id="af-delivery" placeholder="Recipient's full address">
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Current Location *</label>
+              <input type="text" id="af-location" placeholder="e.g. Pune Hub">
+            </div>
+            <div class="form-field">
+              <label>Shipment Status *</label>
+              <select id="af-status">
+                <option value="Booked">Booked</option>
+                <option value="Picked Up">Picked Up</option>
+                <option value="In Transit">In Transit</option>
+                <option value="Out for Delivery">Out for Delivery</option>
+                <option value="Delivered">Delivered</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label>Expected Delivery Date *</label>
+              <input type="date" id="af-date">
+            </div>
+            <div class="form-field">
+              <label>Weight (kg)</label>
+              <input type="number" id="af-weight" placeholder="e.g. 2.5" min="0.1" step="0.1">
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Notes (optional)</label>
+            <textarea id="af-notes" rows="2" placeholder="Any special instructions..."></textarea>
+          </div>
+          <div class="form-actions" style="justify-content:flex-start">
+            <button class="btn btn-ghost" onclick="clearAddForm()">Clear</button>
+            <button class="btn btn-rust" onclick="saveFromPanel()">📦 Create Shipment</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /app -->
+
+<script>
+// ── AUTH GUARD
+if (localStorage.getItem('swiftroute_auth') !== 'true') {
+  window.location.href = 'adminLogin.html';
+}
+document.getElementById('adminEmail').textContent =
+  localStorage.getItem('swiftroute_admin_email') || 'admin@courier.com';
+
+function logout() {
+  showConfirm('Log out?', 'You will be returned to the login page.', () => {
+    localStorage.removeItem('swiftroute_auth');
+    window.location.href = 'adminLogin.html';
+  });
+}
+
+// ── DATA LAYER
+const STORAGE_KEY = 'swiftroute_shipments';
+
+function getShipments() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+
+function saveShipments(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function generateTimeline(status, createdAt, location) {
+  const statuses = ['Booked', 'Picked Up', 'In Transit', 'Out for Delivery', 'Delivered'];
+  const idx = statuses.indexOf(status);
+  const now = new Date();
+  return statuses.map((s, i) => ({
+    title: s === 'Booked' ? 'Order Booked' :
+           s === 'Picked Up' ? `Picked Up — ${location}` :
+           s === 'In Transit' ? `In Transit — ${location}` :
+           s === 'Out for Delivery' ? `Out for Delivery — ${location}` :
+           'Delivered',
+    time: i < idx ? new Date(new Date(createdAt).getTime() + i * 4 * 3600000).toLocaleString('en-IN', {dateStyle:'medium',timeStyle:'short'})
+          : i === idx ? 'Just updated'
+          : 'Pending',
+    state: i < idx ? 'done' : i === idx ? 'active' : 'pending'
+  }));
+}
+
+// Seed demo data if empty
+function seedIfEmpty() {
+  if (getShipments().length === 0) {
+    const demo = [
+      { id:'SWR-2024-001', customer:'Arjun Mehta', phone:'+91 98001 11111', service:'Same-Day Express', pickup:'12 MG Road, Pune', delivery:'45 Bandra West, Mumbai', location:'Mumbai Sorting Hub', status:'Out for Delivery', date:'2024-04-04', weight:'1.2', notes:'Fragile — handle with care', createdAt: new Date(Date.now()-86400000*2).toISOString() },
+      { id:'SWR-2024-002', customer:'Priya Sharma', phone:'+91 98002 22222', service:'Standard', pickup:'7 Connaught Place, Delhi', delivery:'22 MG Road, Bengaluru', location:'Hyderabad Transit Hub', status:'In Transit', date:'2024-04-06', weight:'3.5', notes:'', createdAt: new Date(Date.now()-86400000*1).toISOString() },
+      { id:'SWR-2024-003', customer:'Rahul Iyer', phone:'+91 98003 33333', service:'Overnight Express', pickup:'15 Anna Nagar, Chennai', delivery:'8 Jubilee Hills, Hyderabad', location:'Chennai Hub', status:'Picked Up', date:'2024-04-05', weight:'0.8', notes:'Call before delivery', createdAt: new Date(Date.now()-3600000*5).toISOString() },
+      { id:'SWR-2024-004', customer:'Sneha Patil', phone:'+91 98004 44444', service:'Economy', pickup:'3 FC Road, Pune', delivery:'77 Salt Lake, Kolkata', location:'Kolkata Delivery Hub', status:'Delivered', date:'2024-04-02', weight:'5.0', notes:'', createdAt: new Date(Date.now()-86400000*5).toISOString() },
+    ];
+    saveShipments(demo);
+  }
+}
+seedIfEmpty();
+
+// ── PANEL SWITCHING
+function switchPanel(el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  const name = el.dataset.panel;
+  document.getElementById('panel-' + name).classList.add('active');
+  document.getElementById('topbarTitle').textContent = el.textContent.trim();
+  renderAll();
+}
+function switchPanelByName(name) {
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.dataset.panel === name) n.click();
+  });
+}
+
+// ── RENDER
+function badgeFor(status) {
+  const map = {
+    'Booked': ['badge-booked', '🔵'],
+    'Picked Up': ['badge-pickup', '🟡'],
+    'In Transit': ['badge-transit', '🟣'],
+    'Out for Delivery': ['badge-out', '🟢'],
+    'Delivered': ['badge-delivered', '✅'],
+  };
+  const [cls, icon] = map[status] || ['badge-booked', '•'];
+  return `<span class="badge ${cls}"><span class="badge-dot"></span>${status}</span>`;
+}
+
+function renderRow(s, showService = false) {
+  return `<tr>
+    <td><span class="track-id">${s.id}</span></td>
+    <td><span class="customer">${s.customer}</span></td>
+    ${showService ? `<td style="font-size:0.8rem;color:var(--muted)">${s.service || '—'}</td>` : ''}
+    <td>${badgeFor(s.status)}</td>
+    <td><span class="location">📍 ${s.location}</span></td>
+    <td><span class="date">📅 ${s.date}</span></td>
+    <td>
+      <div class="action-btns">
+        <button class="btn btn-ghost btn-sm" onclick="openStatusModal('${s.id}')">✏️ Update</button>
+        ${s.status !== 'Delivered' ? `<button class="btn btn-green btn-sm" onclick="markDelivered('${s.id}')">✓ Deliver</button>` : ''}
+        <button class="btn btn-danger btn-sm" onclick="deleteShipment('${s.id}')">🗑</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+function renderStats() {
+  const data = getShipments();
+  const total = data.length;
+  const delivered = data.filter(s => s.status === 'Delivered').length;
+  const transit = data.filter(s => s.status === 'In Transit').length;
+  const pending = data.filter(s => !['Delivered'].includes(s.status)).length;
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-card-icon" style="background:rgba(59,130,246,0.12);color:#3b82f6">📦</div>
+      <div class="stat-card-body"><div class="stat-card-num">${total}</div><div class="stat-card-label">Total Shipments</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-icon" style="background:rgba(34,160,107,0.12);color:var(--green)">✅</div>
+      <div class="stat-card-body"><div class="stat-card-num">${delivered}</div><div class="stat-card-label">Delivered</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-icon" style="background:rgba(139,92,246,0.12);color:#8b5cf6">🚚</div>
+      <div class="stat-card-body"><div class="stat-card-num">${transit}</div><div class="stat-card-label">In Transit</div></div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-card-icon" style="background:rgba(245,158,11,0.12);color:#f59e0b">⏳</div>
+      <div class="stat-card-body"><div class="stat-card-num">${pending}</div><div class="stat-card-label">Pending</div></div>
+    </div>`;
+}
+
+function renderAll(filter = '') {
+  const data = getShipments();
+  const filtered = filter
+    ? data.filter(s => s.id.toLowerCase().includes(filter.toLowerCase()) ||
+                       s.customer.toLowerCase().includes(filter.toLowerCase()))
+    : data;
+
+  renderStats();
+
+  const recentBody = document.getElementById('recentTableBody');
+  const recent = filtered.slice().reverse().slice(0, 5);
+  recentBody.innerHTML = recent.length
+    ? recent.map(s => renderRow(s)).join('')
+    : `<tr><td colspan="6"><div class="empty-state"><div class="empty-icon">📭</div>No shipments found</div></td></tr>`;
+
+  const allBody = document.getElementById('allTableBody');
+  allBody.innerHTML = filtered.length
+    ? filtered.slice().reverse().map(s => renderRow(s, true)).join('')
+    : `<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📭</div>No shipments found</div></td></tr>`;
+}
+
+function handleSearch(val) {
+  renderAll(val);
+}
+
+// ── ADD / EDIT MODAL (popup version)
+let editingId = null;
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add New Shipment';
+  document.getElementById('saveShipmentBtn').textContent = '💾 Save Shipment';
+  ['f-trackId','f-customer','f-phone','f-pickup','f-delivery','f-location','f-notes','f-weight'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-service').value = 'Same-Day Express';
+  document.getElementById('f-status').value = 'Booked';
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-trackId').readOnly = false;
+  document.getElementById('shipmentModal').classList.add('open');
+}
+
+document.getElementById('saveShipmentBtn').addEventListener('click', () => {
+  const tid = document.getElementById('f-trackId').value.trim();
+  const customer = document.getElementById('f-customer').value.trim();
+  const delivery = document.getElementById('f-delivery').value.trim();
+  const location = document.getElementById('f-location').value.trim();
+  const status = document.getElementById('f-status').value;
+  const date = document.getElementById('f-date').value;
+
+  if (!tid || !customer || !delivery || !location || !date) {
+    showToast('Please fill in all required fields (*)', 'error'); return;
+  }
+
+  const data = getShipments();
+
+  if (!editingId) {
+    if (data.find(s => s.id === tid)) {
+      showToast('Tracking ID already exists!', 'error'); return;
+    }
+    data.push({
+      id: tid, customer, phone: document.getElementById('f-phone').value.trim(),
+      service: document.getElementById('f-service').value,
+      pickup: document.getElementById('f-pickup').value.trim(),
+      delivery, location, status, date,
+      weight: document.getElementById('f-weight').value,
+      notes: document.getElementById('f-notes').value.trim(),
+      createdAt: new Date().toISOString(),
+      timeline: generateTimeline(status, new Date().toISOString(), location)
+    });
+    showToast('✅ Shipment created successfully!', 'success');
+  } else {
+    const idx = data.findIndex(s => s.id === editingId);
+    if (idx !== -1) {
+      data[idx] = { ...data[idx], customer, phone: document.getElementById('f-phone').value.trim(),
+        service: document.getElementById('f-service').value, pickup: document.getElementById('f-pickup').value.trim(),
+        delivery, location, status, date, weight: document.getElementById('f-weight').value,
+        notes: document.getElementById('f-notes').value.trim(),
+        timeline: generateTimeline(status, data[idx].createdAt, location)
+      };
+      showToast('✅ Shipment updated!', 'success');
+    }
+  }
+
+  saveShipments(data);
+  closeModal();
+  renderAll();
+});
+
+function closeModal() { document.getElementById('shipmentModal').classList.remove('open'); }
+
+// ── STATUS MODAL
+function openStatusModal(id) {
+  const s = getShipments().find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('s-trackId').value = s.id;
+  document.getElementById('s-status').value = s.status;
+  document.getElementById('s-location').value = s.location;
+  document.getElementById('s-date').value = s.date;
+  document.getElementById('statusModal').classList.add('open');
+
+  document.getElementById('saveStatusBtn').onclick = () => {
+    const data = getShipments();
+    const idx = data.findIndex(x => x.id === id);
+    if (idx !== -1) {
+      data[idx].status = document.getElementById('s-status').value;
+      data[idx].location = document.getElementById('s-location').value.trim() || data[idx].location;
+      data[idx].date = document.getElementById('s-date').value || data[idx].date;
+      data[idx].timeline = generateTimeline(data[idx].status, data[idx].createdAt, data[idx].location);
+      saveShipments(data);
+      closeStatusModal();
+      renderAll();
+      showToast('✅ Status updated!', 'success');
+    }
+  };
+}
+function closeStatusModal() { document.getElementById('statusModal').classList.remove('open'); }
+
+// ── MARK DELIVERED
+function markDelivered(id) {
+  showConfirm('Mark as Delivered?', `Shipment ${id} will be marked as Delivered.`, () => {
+    const data = getShipments();
+    const idx = data.findIndex(s => s.id === id);
+    if (idx !== -1) {
+      data[idx].status = 'Delivered';
+      data[idx].timeline = generateTimeline('Delivered', data[idx].createdAt, data[idx].location);
+      saveShipments(data);
+      renderAll();
+      showToast('✅ Marked as Delivered!', 'success');
+    }
+  });
+}
+
+// ── DELETE
+function deleteShipment(id) {
+  showConfirm('Delete Shipment?', `This will permanently remove ${id} from the system.`, () => {
+    const data = getShipments().filter(s => s.id !== id);
+    saveShipments(data);
+    renderAll();
+    showToast('🗑 Shipment deleted', 'error');
+  });
+}
+
+// ── ADD FROM PANEL (inline form)
+function saveFromPanel() {
+  const tid = document.getElementById('af-trackId').value.trim();
+  const customer = document.getElementById('af-customer').value.trim();
+  const delivery = document.getElementById('af-delivery').value.trim();
+  const location = document.getElementById('af-location').value.trim();
+  const status = document.getElementById('af-status').value;
+  const date = document.getElementById('af-date').value;
+
+  if (!tid || !customer || !delivery || !location || !date) {
+    showToast('Please fill all required (*) fields', 'error'); return;
+  }
+  const data = getShipments();
+  if (data.find(s => s.id === tid)) { showToast('Tracking ID already exists!', 'error'); return; }
+
+  data.push({
+    id: tid, customer, phone: document.getElementById('af-phone').value.trim(),
+    service: document.getElementById('af-service').value,
+    pickup: document.getElementById('af-pickup').value.trim(),
+    delivery, location, status, date,
+    weight: document.getElementById('af-weight').value,
+    notes: document.getElementById('af-notes').value.trim(),
+    createdAt: new Date().toISOString(),
+    timeline: generateTimeline(status, new Date().toISOString(), location)
+  });
+  saveShipments(data);
+  clearAddForm();
+  showToast('✅ Shipment created!', 'success');
+  renderAll();
+  switchPanelByName('shipments');
+}
+
+function clearAddForm() {
+  ['af-trackId','af-customer','af-phone','af-pickup','af-delivery','af-location','af-notes','af-weight'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('af-service').value = 'Same-Day Express';
+  document.getElementById('af-status').value = 'Booked';
+  document.getElementById('af-date').value = '';
+}
+
+// ── CONFIRM DIALOG
+let _confirmCb = null;
+function showConfirm(title, text, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmText').textContent = text;
+  _confirmCb = cb;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('open'); _confirmCb = null; }
+document.getElementById('confirmOk').addEventListener('click', () => {
+  if (_confirmCb) _confirmCb();
+  closeConfirm();
+});
+
+// ── TOAST
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.className = `toast ${type}`;
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close modals on overlay click
+['shipmentModal','statusModal'].forEach(id => {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+// Initial render
+renderAll();
+</script>
+</body>
+</html>
